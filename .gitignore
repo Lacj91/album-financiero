@@ -1,0 +1,9 @@
+# Ignore temporary Excel files
+~$*
+*.tmp
+
+# Ignore macOS hidden files
+.DS_Store
+
+# Ignore Windows thumbnail caches
+Thumbs.db
