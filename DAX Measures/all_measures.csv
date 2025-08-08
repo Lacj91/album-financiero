@@ -1,0 +1,674 @@
+﻿dax_name,dax_measure
+% Monto por inversiones,"DIVIDE(
+   SUM(inversiones[monto]),
+   CALCULATE(SUM(inversiones[monto]), REMOVEFILTERS(inversiones[tipo_acceso]))
+)"
+% Presupuesto,"VAR Presup = [Monto Presupuestado]
+VAR Gastado = [Monto Gastado Dinamico]
+RETURN
+IF(
+   Presup = 0 || ISBLANK(Presup),
+   BLANK(),
+   DIVIDE(Gastado, Presup)
+)"
+Credito Disponible,[Limite Credito] + [Saldo credito]
+Diferencia Mensual,"VAR CurrentMonto = [Monto Mensual]
+VAR PrevMonto = [Monto Mes Anterior]
+RETURN
+IF(ISBLANK(PrevMonto), BLANK(), CurrentMonto - PrevMonto)"
+Diferencia Periodo Seleccionado,"VAR FechasSeleccionadas =
+   CALCULATETABLE(
+       VALUES(Calendario[Fecha]),
+       ALLSELECTED(Calendario)
+   )
+VAR FechaMin = MINX(FechasSeleccionadas, Calendario[Fecha])
+VAR FechaMax = MAXX(FechasSeleccionadas, Calendario[Fecha])
+VAR TipoAccesoActual = SELECTEDVALUE(inversiones[tipo_acceso])
+-- Filter only the data in the selected range for this tipo_acceso
+VAR DatosSeleccionados =
+   FILTER(
+       ALL(inversiones),
+       inversiones[fecha_monto] >= FechaMin &&
+       inversiones[fecha_monto] <= FechaMax &&
+       inversiones[tipo_acceso] = TipoAccesoActual
+   )
+-- Get first and last full calendar month inside selection
+VAR PrimerMes =
+   CALCULATE(
+       MINX(DatosSeleccionados, DATE(YEAR(inversiones[fecha_monto]), MONTH(inversiones[fecha_monto]), 1))
+   )
+VAR UltimoMes =
+   CALCULATE(
+       MAXX(DatosSeleccionados, DATE(YEAR(inversiones[fecha_monto]), MONTH(inversiones[fecha_monto]), 1))
+   )
+VAR MontoInicio =
+   CALCULATE(
+       SUM(inversiones[monto]),
+       FILTER(
+           DatosSeleccionados,
+           inversiones[fecha_monto] >= PrimerMes &&
+           inversiones[fecha_monto] < EOMONTH(PrimerMes, 0) + 1
+       )
+   )
+VAR MontoFin =
+   CALCULATE(
+       SUM(inversiones[monto]),
+       FILTER(
+           DatosSeleccionados,
+           inversiones[fecha_monto] >= UltimoMes &&
+           inversiones[fecha_monto] < EOMONTH(UltimoMes, 0) + 1
+       )
+   )
+RETURN
+IF(
+   ISBLANK(MontoInicio) || ISBLANK(MontoFin),
+   BLANK(),
+   MontoFin - MontoInicio
+)"
+Disponible antes del Limite,"VAR _limite =
+   CALCULATE(
+       MAX(parametros[limite_autoimpuesto]),
+       parametros[parametro] = ""credito_1""
+   )
+VAR _ultimo_fecha_corte =
+   CALCULATE(
+       MAX(creditos[fecha_corte]),
+       ALLSELECTED(creditos)
+   )
+VAR _monto_ultimo_periodo =
+   CALCULATE(
+       [Monto Asociado],
+       FILTER(
+           ALL(creditos),
+           creditos[fecha_corte] = _ultimo_fecha_corte
+       )
+   )
+RETURN
+   _limite - _monto_ultimo_periodo"
+Duración del viaje,"VAR FechaInicio = SELECTEDVALUE(viajes[desde])
+VAR FechaFin = SELECTEDVALUE(viajes[hasta])
+RETURN
+IF(
+   NOT ISBLANK(FechaInicio) && NOT ISBLANK(FechaFin),
+   DATEDIFF(FechaInicio, FechaFin, DAY),
+   BLANK()
+)"
+Filtro Razon de Uso,"CALCULATE(
+   COUNTROWS(c_diaria),
+   FILTER(
+       c_diaria,
+       c_diaria[razon_uso] = SELECTEDVALUE(dim_razon_uso[razon_uso])
+   )
+)"
+Filtro Ubicacion de Viaje,"CALCULATE(
+   COUNTROWS(c_diaria),
+   FILTER(
+       c_diaria,
+       c_diaria[ubicacion_viaje_ajustado] = SELECTEDVALUE(viajes[ubicacion_viajes])
+   )
+)"
+Gasto Real Viajes,SUM(c_diaria[monto])
+Gasto Viajes (Treemap),"VAR TotalViajes =
+   CALCULATE(
+       SUM(c_diaria[monto]),
+       c_diaria[ubicacion_viaje_ajustado] <> ""Sin Viaje""
+   )
+VAR CategoriaActual = SELECTEDVALUE(c_diaria[ubicacion_viaje_ajustado])
+VAR ValorActual = SUM(c_diaria[monto])
+RETURN
+IF(
+   ISBLANK(TotalViajes),
+   -- ✔️ No viajes → show Sin Viaje only
+   IF(
+       CategoriaActual = ""Sin Viaje"" && NOT ISBLANK(ValorActual),
+       ABS(ValorActual) + 0.001,
+       BLANK()
+   ),
+   -- ✔️ Viajes exist → show only real destinos (no Sin Viaje)
+   IF(
+       CategoriaActual <> ""Sin Viaje"" && NOT ISBLANK(ValorActual),
+       ABS(ValorActual) + 0.001,
+       BLANK()
+   )
+)"
+Generado % Inversiones,"VAR TipoSeleccionado = SELECTEDVALUE(inversiones[tipo_inversion])
+VAR TotalGenerado = [Resultado Financiero a la Fecha]
+VAR TotalInvertido = [Total Inversiones]
+VAR TotalInvertidoPPR = [Saldo Actual Inversiones]
+RETURN
+IF(
+   ISBLANK(TotalInvertido) || TotalInvertido = 0,
+   1,
+   SWITCH(
+       TRUE(),
+       TipoSeleccionado = ""entidad_2"",
+           DIVIDE(TotalGenerado, TotalInvertido + TotalGenerado),
+       TipoSeleccionado = ""entidad_8"",
+           DIVIDE(TotalInvertidoPPR - TotalInvertido, TotalInvertido),
+       DIVIDE(TotalGenerado, TotalInvertido)
+   )
+)"
+Limite Credito,"CALCULATE(
+   MAX(parametros[valor]),
+   parametros[parametro] = ""credito_1""
+)"
+Meses de Sostenibilidad,"DIVIDE(
+   ([Total Disponible Inversiones] + [Saldo Credito]) + [Total Presupuesto Especifico],
+   - [Total Presupuesto Regular]
+)"
+Meses y Días Sostenibilidad (con Fecha),"VAR MesesDec = [Meses de Sostenibilidad]
+VAR MesesEnteros = INT(MesesDec)
+VAR Dias = ROUND((MesesDec - MesesEnteros) * 30, 0)
+-- Add full months using EDATE
+VAR FechaIntermedia = EDATE(TODAY(), MesesEnteros)
+-- Add remaining days on top of that
+VAR FechaMax = FechaIntermedia + Dias
+-- Format the final date in Spanish with proper capitalization
+VAR FechaFormateada =
+   FORMAT(FechaMax, ""dd"") & "" /"" &
+   UPPER(LEFT(FORMAT(FechaMax, ""mmmm""),1)) &
+   MID(FORMAT(FechaMax, ""mmmm""),2,LEN(FORMAT(FechaMax, ""mmmm""))) &
+   ""/ "" & FORMAT(FechaMax, ""yyyy"")
+RETURN
+FORMAT(MesesEnteros, ""0"") & "" meses y "" &
+FORMAT(Dias, ""0"") & "" días"" & UNICHAR(10) &
+""Fecha Máxima: "" & FechaFormateada"
+Monto Asociado,"VAR FechaInicio = SELECTEDVALUE(creditos[fecha_inicio])
+VAR FechaCorte = SELECTEDVALUE(creditos[fecha_corte])
+RETURN
+   CALCULATE(
+       SUM(c_diaria[monto]),
+       FILTER(
+           c_diaria,
+           c_diaria[fecha] >= FechaInicio &&
+           c_diaria[fecha] <= FechaCorte &&
+           SEARCH(""credito_1"", c_diaria[metodo_pago], 1, 0) > 0 &&
+           SEARCH(""Pago: tarjeta de Credito"", c_diaria[descripcion], 1, 0) = 0
+       )
+   )"
+Monto Gastado (Visual),ABS([Monto Gastado Dinamico])
+Monto Gastado Dinamico,"VAR _razonSeleccionada = VALUES(dim_razon_uso[razon_uso])
+VAR _isRazonFiltrada = IF(COUNTROWS(_razonSeleccionada) >= 1, TRUE(), FALSE())
+RETURN
+CALCULATE(
+   SUM(c_diaria[monto]),
+   NOT dim_razon_uso[razon_uso] IN { ""DINERO"", ""INGRESO"" },
+   IF(
+       _isRazonFiltrada,
+       dim_razon_uso[razon_uso] IN _razonSeleccionada,
+       TRUE()
+   )
+)"
+Monto Inversiones Mensual,"VAR MesesSeleccionados =
+   CALCULATETABLE(
+       VALUES(Calendario[Año Mes]),
+       ALLSELECTED(Calendario)
+   )
+VAR EsUnSoloMes = COUNTROWS(MesesSeleccionados) = 1
+VAR UltimaFechaSeleccionada =
+   CALCULATE(
+       MAX(inversiones[fecha_monto]),
+       ALLSELECTED(Calendario)
+   )
+RETURN
+IF(
+   EsUnSoloMes,
+   SUM(inversiones[monto]),
+   CALCULATE(
+       SUM(inversiones[monto]),
+       inversiones[fecha_monto] = UltimaFechaSeleccionada
+   )
+)"
+Monto Mensual,"CALCULATE(
+   SUM(inversiones[monto]),
+   ALLEXCEPT(inversiones, inversiones[tipo_acceso]),
+   VALUES(Calendario[PrimerDiaMes])
+)"
+Monto Mes Anterior,"VAR CurrentMonth = MAX(Calendario[PrimerDiaMes])
+VAR TipoAccesoActual = SELECTEDVALUE(inversiones[tipo_acceso])
+VAR PrevMonth =
+   MAXX(
+       FILTER(
+           ALL(Calendario),
+           Calendario[PrimerDiaMes] < CurrentMonth &&
+           CALCULATE(
+               COUNTROWS(inversiones),
+               inversiones[tipo_acceso] = TipoAccesoActual,
+               Calendario[PrimerDiaMes] = Calendario[PrimerDiaMes]
+           ) > 0
+       ),
+       Calendario[PrimerDiaMes]
+   )
+RETURN
+CALCULATE(
+   [Monto Mensual],
+   FILTER(
+       ALL(Calendario),
+       Calendario[PrimerDiaMes] = PrevMonth
+   )
+)"
+Monto Presupuestado,"VAR _fechasSeleccionadas = VALUES(Calendario[Fecha])
+VAR _minFecha = MINX(_fechasSeleccionadas, Calendario[Fecha])
+VAR _maxFecha = MAXX(_fechasSeleccionadas, Calendario[Fecha])
+RETURN
+SUMX(
+   FILTER(
+       presupuesto,
+       presupuesto[inicio_mes] <= _maxFecha &&
+       presupuesto[final_mes] >= _minFecha
+   ),
+   VAR _razon = presupuesto[razon_uso]
+   VAR _isPlanned = LEFT(_razon, 2) = ""P.""
+   VAR _monto = presupuesto[monto_presupuesto]
+   VAR _inicio = MAX(presupuesto[inicio_mes], _minFecha)
+   VAR _final = MIN(presupuesto[final_mes], _maxFecha)
+   VAR _meses = DATEDIFF(_inicio, _final, MONTH) + 1
+   RETURN
+       IF(_isPlanned, _monto, _monto * _meses)
+)"
+Monto Presupuestado(Visual),ABS([Monto Presupuestado])
+Monto Reciente Por Acceso,"VAR AccesoActual = SELECTEDVALUE(inversiones[tipo_acceso])
+VAR FechaMaxima =
+   CALCULATE(
+       MAX(inversiones[fecha_monto]),
+       inversiones[tipo_acceso] = AccesoActual
+   )
+RETURN
+CALCULATE(
+   SUM(inversiones[monto]),
+   inversiones[tipo_acceso] = AccesoActual &&
+   inversiones[fecha_monto] = FechaMaxima
+)"
+Mostrar Descripcion,"VAR _fechasSeleccionadas = VALUES(Calendario[Fecha])
+VAR _minFecha = MINX(_fechasSeleccionadas, Calendario[Fecha])
+VAR _maxFecha = MAXX(_fechasSeleccionadas, Calendario[Fecha])
+VAR _currentRazon = SELECTEDVALUE(presupuesto[razon_uso])
+VAR _currentDescripcion = SELECTEDVALUE(presupuesto[descripcion])
+RETURN
+IF (
+   COUNTROWS (
+       FILTER (
+           presupuesto,
+           presupuesto[inicio_mes] <= _maxFecha &&
+           presupuesto[final_mes] >= _minFecha &&
+           presupuesto[razon_uso] = _currentRazon &&
+           presupuesto[descripcion] = _currentDescripcion
+       )
+   ) > 0,
+   1,
+   0
+)"
+Mostrar Transaccion,"VAR FechaInicio = [Seleccion Fecha Inicio]
+VAR FechaCorte  = [Seleccion Fecha Corte]
+VAR MetodoPago  = SELECTEDVALUE(c_diaria[metodo_pago])
+VAR Descripcion = SELECTEDVALUE(c_diaria[descripcion])
+VAR Fecha       = SELECTEDVALUE(c_diaria[fecha])
+VAR EsMetodoCredito =
+   NOT ISBLANK(MetodoPago) &&
+   SEARCH(""credito"", LOWER(MetodoPago), 1, 0) > 0
+VAR EsDescripcionValida =
+   NOT ISBLANK(Descripcion) &&
+   LEFT(Descripcion, 25) <> ""Pago: Tarjeta de Credito""
+VAR EsFechaValida =
+   Fecha >= FechaInicio &&
+   Fecha <= FechaCorte
+RETURN
+IF(EsMetodoCredito && EsDescripcionValida && EsFechaValida, 1)"
+Restante para Gastar,"[Monto Presupuestado] -
+IF([Monto Gastado Dinamico] > 0, [Monto Gastado Dinamico] * -1, [Monto Gastado Dinamico])"
+Resultado Financiero a la Fecha,"VAR TipoSeleccionado = SELECTEDVALUE(inversiones[tipo_inversion])
+VAR FechaActual = SELECTEDVALUE(Calendario[PrimerDiaMes])  -- Current month on X axis
+VAR FechaHoy = TODAY()
+VAR FechaInicioInversion =
+   CALCULATE(
+       MIN(inversiones[primer_dia_mes]),
+       FILTER(ALL(inversiones), inversiones[tipo_inversion] = TipoSeleccionado)
+   )
+RETURN
+IF(
+   TipoSeleccionado = ""entidad_8"",
+   [Saldo Actual Inversiones] - [Total Inversiones],
+   IF(
+       ISBLANK(FechaActual) ||
+       ISBLANK(FechaInicioInversion) ||
+       FechaActual > FechaHoy ||
+       FechaActual < FechaInicioInversion,
+       BLANK(),
+       VAR cDiariaFiltrada =
+           FILTER(
+               ALL(c_diaria),
+               c_diaria[tipo_inversion_detectado] = TipoSeleccionado &&
+               c_diaria[fecha] <= FechaActual
+           )
+       VAR MontoRetirado =
+           SUMX(
+               FILTER(
+                   cDiariaFiltrada,
+                   CONTAINSSTRING(c_diaria[descripcion], ""RETIRO PARCIAL"") ||
+                   CONTAINSSTRING(c_diaria[descripcion], ""RETIRO FINAL"")
+               ),
+               c_diaria[monto]
+           )
+       VAR FlujoMovimiento =
+           SUMX(
+               FILTER(
+                   cDiariaFiltrada,
+                   NOT (
+                       CONTAINSSTRING(c_diaria[descripcion], ""RETIRO PARCIAL"") ||
+                       CONTAINSSTRING(c_diaria[descripcion], ""RETIRO FINAL"") ||
+                       CONTAINSSTRING(c_diaria[descripcion], ""RETIRO GANANCIAS"")
+                   )
+               ),
+               c_diaria[monto]
+           )
+       VAR UltimaFechaVisible =
+           CALCULATE(
+               MAX(inversiones[primer_dia_mes]),
+               FILTER(
+                   ALL(inversiones),
+                   inversiones[tipo_inversion] = TipoSeleccionado &&
+                   inversiones[primer_dia_mes] <= FechaActual
+               )
+           )
+       VAR UltimoMontoVisible =
+           CALCULATE(
+               MAX(inversiones[monto]),
+               FILTER(
+                   ALL(inversiones),
+                   inversiones[tipo_inversion] = TipoSeleccionado &&
+                   inversiones[primer_dia_mes] = UltimaFechaVisible
+               )
+           )
+       RETURN
+           IF(
+               NOT ISBLANK(MontoRetirado),
+               MontoRetirado + FlujoMovimiento,
+               UltimoMontoVisible + FlujoMovimiento
+           )
+   )
+)"
+Resumen Estado Pago General,"VAR FechaSeleccionada = MAX(Calendario[Fecha])
+VAR AnoSeleccionado = YEAR(FechaSeleccionada)
+VAR MesSeleccionado = MONTH(FechaSeleccionada)
+-- 🔍 Filter out ""deuda"" for the selected month
+VAR FilaDeuda =
+   FILTER(
+       ALL(creditos),
+       YEAR(creditos[fecha_limite_pago]) = AnoSeleccionado &&
+       MONTH(creditos[fecha_limite_pago]) = MesSeleccionado
+   )
+VAR TieneFila = COUNTROWS(FilaDeuda)
+-- 📅 Extract dates and flag
+VAR FechaLimite = MAXX(FilaDeuda, creditos[fecha_limite_pago])
+VAR FechaInicio = MAXX(FilaDeuda, creditos[fecha_inicio])
+VAR FechaCorte = MAXX(FilaDeuda, creditos[fecha_corte])
+VAR ListoParaPago = TRIM(LOWER(MAXX(FilaDeuda, creditos[listo_para_pago])))
+-- 🔎 Looks for ±3 to detect the payment
+VAR VentanaInicio = FechaLimite - 3
+VAR VentanaFin = FechaLimite + 3
+VAR PagoDetectado =
+   CALCULATE(
+       COUNTROWS(c_diaria),
+       FILTER(
+           ALL(c_diaria),
+           c_diaria[fecha] >= VentanaInicio &&
+           c_diaria[fecha] <= VentanaFin &&
+           CONTAINSSTRING(LOWER(c_diaria[descripcion]), ""pago: tarjeta de credito"")
+       )
+   )
+VAR MontoAsociado =
+   IF(
+       TieneFila > 0,
+       CALCULATE(
+           SUM(c_diaria[monto]),
+           FILTER(
+               ALL(c_diaria),
+               c_diaria[fecha] >= FechaInicio &&
+               c_diaria[fecha] <= FechaCorte &&
+               SEARCH(""credito_1"", c_diaria[metodo_pago], 1, 0) > 0 &&
+               SEARCH(""Pago: tarjeta de Credito"", c_diaria[descripcion], 1, 0) = 0
+           )
+       ),
+       BLANK()
+   )
+VAR MontoFallback =
+   CALCULATE(
+       SUM(c_diaria[monto]),
+       FILTER(
+           ALL(c_diaria),
+           YEAR(c_diaria[fecha]) = AnoSeleccionado &&
+           MONTH(c_diaria[fecha]) = MesSeleccionado &&
+           SEARCH(""credito_1"", c_diaria[metodo_pago], 1, 0) > 0
+       )
+   )
+VAR MontoMostrar = IF(TieneFila = 0 || ISBLANK(FechaLimite), MontoFallback, MontoAsociado)
+VAR FechaPagoRealNoConocida = TieneFila > 0 && FechaCorte > TODAY()
+VAR FechaCorteYaPaso = TieneFila > 0 && FechaCorte <= TODAY()
+VAR MensajeEstado =
+   IF(
+       TieneFila = 0 || ISBLANK(FechaLimite),
+       ""🚫 No hay registro del Mes"",
+       IF(
+           PagoDetectado > 0,
+           ""✅ Ya Pagado"",
+           IF(
+               FechaPagoRealNoConocida,
+               ""⚠️ Fecha de Pago Real Aun No Conocida"",
+               IF(
+                   FechaCorteYaPaso && ListoParaPago = ""si"",
+                   ""🟡 Programado para Pago"",
+                   IF(
+                       FechaCorteYaPaso && ListoParaPago = ""no"",
+                       ""🔴 Pendiente de Programar Pago""
+                   )
+               )
+           )
+       )
+   )
+RETURN
+   MensajeEstado & UNICHAR(10) &
+   ""Monto a Liquidar: "" & FORMAT(MontoMostrar, ""$#,##0.00"") & UNICHAR(10) &
+   IF(
+       TieneFila = 0 || ISBLANK(FechaLimite) || FechaPagoRealNoConocida,
+       """",
+       ""Fecha limite: "" & FORMAT(FechaLimite, ""dd/mm/yyyy"")
+   )"
+Resumen Estado Pago Proximo Mes,"VAR FechaSeleccionada = MAX(Calendario[Fecha])
+VAR AnoSeleccionado = YEAR(FechaSeleccionada)
+VAR MesSeleccionado = MONTH(FechaSeleccionada)
+-- adjustment of month and day for the next month
+VAR MesSiguiente = IF(MesSeleccionado = 12, 1, MesSeleccionado + 1)
+VAR AnoSiguiente = IF(MesSeleccionado = 12, AnoSeleccionado + 1, AnoSeleccionado)
+-- Look out the row for the next month
+VAR FilaDeuda =
+   FILTER(
+       ALL(creditos),
+       YEAR(creditos[fecha_limite_pago]) = AnoSiguiente &&
+       MONTH(creditos[fecha_limite_pago]) = MesSiguiente
+   )
+VAR TieneFila = COUNTROWS(FilaDeuda)
+VAR FechaInicio = MAXX(FilaDeuda, creditos[fecha_inicio])
+VAR FechaCorte = MAXX(FilaDeuda, creditos[fecha_corte])
+VAR MontoAsociado =
+   CALCULATE(
+       SUM(c_diaria[monto]),
+       FILTER(
+           ALL(c_diaria),
+           c_diaria[fecha] >= FechaInicio &&
+           c_diaria[fecha] <= FechaCorte &&
+           SEARCH(""credito_1"", c_diaria[metodo_pago], 1, 0) > 0 &&
+           SEARCH(""Pago: tarjeta de Credito"", c_diaria[descripcion], 1, 0) = 0
+       )
+   )
+RETURN
+IF(
+   TieneFila = 0,
+   ""No hay información del próximo mes"",
+   ""Acumulado siguiente pago: "" & FORMAT(MontoAsociado, ""$#,##0.00"")
+)"
+Resumen Pago Combinado,"VAR LineBreak = UNICHAR(10)
+VAR ForcedBlankLine = LineBreak & UNICHAR(8203) & LineBreak  -- zero-width space between breaks
+RETURN
+   [Resumen Estado Pago General] &
+   ForcedBlankLine &
+   [Resumen Estado Pago Proximo Mes]"
+Saldo Actual,"CALCULATE(
+   SUM(c_diaria[monto]),
+   c_diaria[fecha] <= TODAY()
+)"
+Saldo Actual Inversiones,"VAR TipoSeleccionado = SELECTEDVALUE(inversiones[tipo_inversion])
+-- Max visible date based on actual filtered calendar
+VAR FechaMaximaVisible =
+   CALCULATE(
+       MAX(inversiones[fecha_monto]),
+       FILTER(
+           ALL(inversiones),
+           inversiones[tipo_inversion] = TipoSeleccionado &&
+           inversiones[fecha_monto] IN VALUES(Calendario[Fecha])
+       )
+   )
+VAR MontoVisible =
+   CALCULATE(
+       MAX(inversiones[monto]),
+       FILTER(
+           inversiones,
+           inversiones[tipo_inversion] = TipoSeleccionado &&
+           inversiones[fecha_monto] = FechaMaximaVisible
+       )
+   )
+RETURN
+IF(
+   ISBLANK(FechaMaximaVisible),
+   BLANK(),
+   MontoVisible
+)"
+Saldo Credito,"CALCULATE(
+   SUM(c_diaria[monto]),
+   FILTER(
+       ALL(c_diaria),
+       c_diaria[fecha] <= TODAY() &&
+       c_diaria[metodo_pago] = ""credito_1""
+   )
+)"
+Seleccion Fecha Corte,   MAX(creditos[fecha_corte])
+Seleccion Fecha Inicio,   MIN(creditos[fecha_inicio])
+Total Disponible Inversiones,"VAR FechaMaxima =
+   CALCULATE(
+       MAX(inversiones[fecha_monto]),
+       FILTER(
+           inversiones,
+           inversiones[tipo_acceso] = ""Disponible""
+       )
+   )
+RETURN
+CALCULATE(
+   SUM(inversiones[monto]),
+   FILTER(
+       inversiones,
+       inversiones[tipo_acceso] = ""Disponible""
+           && inversiones[fecha_monto] = FechaMaxima
+   )
+)"
+Total Gastado Clave,SUM('c_diaria'[monto])
+Total Inversiones,"VAR TipoSeleccionado = SELECTEDVALUE(inversiones[tipo_inversion])
+VAR FechaMax = MAX(Calendario[Fecha])
+-- Pre-filter c_diaria for performance
+VAR cDiariaFiltrada =
+   FILTER(
+       ALL(c_diaria),
+       c_diaria[fecha] <= FechaMax
+   )
+-- Special case: Puntos Premia
+VAR MontoPuntosPremia =
+   CALCULATE(
+       SUM(c_diaria[monto]),
+       FILTER(
+           cDiariaFiltrada,
+           CONTAINSSTRING(c_diaria[descripcion], ""Comision Anualidad"") &&
+           CONTAINSSTRING(c_diaria[descripcion], ""entidad_2"") &&
+           NOT CONTAINSSTRING(c_diaria[descripcion], ""RETIRO GANANCIAS"")
+       )
+   )
+-- Special case: CETES
+VAR MontoCETES =
+   CALCULATE(
+       SUM(c_diaria[monto]),
+       FILTER(
+           cDiariaFiltrada,
+           CONTAINSSTRING(c_diaria[descripcion], ""Deposito: entidad_1"") &&
+           NOT CONTAINSSTRING(c_diaria[descripcion], ""RETIRO GANANCIAS"")
+       )
+   )
+-- Default case: other types (generic search)
+VAR MontoOtros =
+   CALCULATE(
+       SUM(c_diaria[monto]),
+       FILTER(
+           cDiariaFiltrada,
+           CONTAINSSTRING(c_diaria[descripcion], TipoSeleccionado) &&
+           NOT (
+               CONTAINSSTRING(c_diaria[descripcion], ""RETIRO GANANCIAS"") ||
+               CONTAINSSTRING(c_diaria[descripcion], ""RETIRO PARCIAL"") ||
+               CONTAINSSTRING(c_diaria[descripcion], ""RETIRO FINAL"")
+           )
+       )
+   )
+RETURN
+   ABS(
+       SWITCH(
+           TRUE(),
+           TipoSeleccionado = ""entidad_2"", MontoPuntosPremia,
+           TipoSeleccionado = ""entidad_1"", MontoCETES,
+           MontoOtros
+       )
+   )"
+Total Presupuesto Especifico,"CALCULATE(
+   SUM(presupuesto[monto_presupuesto]),
+   FILTER(
+       presupuesto,
+       LEFT(presupuesto[razon_uso], 2) = ""P."" &&
+       presupuesto[inicio_mes] > TODAY()
+   )
+)"
+Total Presupuesto Regular,"VAR FechaHoy = TODAY()
+-- 🔎 Filter Regular budgets (exclude Puntual and DINERO)
+VAR PresupuestoFiltrado =
+   FILTER(
+       presupuesto,
+       LEFT(presupuesto[razon_uso], 2) <> ""P."" &&
+       NOT CONTAINSSTRING(presupuesto[razon_uso], ""DINERO"")
+   )
+-- 🔥 Find the period that includes today
+VAR PeriodoActual =
+   FILTER(
+       PresupuestoFiltrado,
+       presupuesto[inicio_mes] <= FechaHoy &&
+       presupuesto[final_mes] >= FechaHoy
+   )
+-- 🔥 If no period includes today, fallback to the most recent past
+VAR InicioUltimoDisponible =
+   CALCULATE(
+       MAX(presupuesto[inicio_mes]),
+       PresupuestoFiltrado
+   )
+VAR PeriodoUltimo =
+   FILTER(
+       PresupuestoFiltrado,
+       presupuesto[inicio_mes] = InicioUltimoDisponible
+   )
+-- 🏁 Return current period if it exists, else the latest available
+RETURN
+IF(
+   COUNTROWS(PeriodoActual) > 0,
+   CALCULATE(
+       SUM(presupuesto[monto_presupuesto]),
+       PeriodoActual
+   ),
+   CALCULATE(
+       SUM(presupuesto[monto_presupuesto]),
+       PeriodoUltimo
+   )
+)"
+ubicacion_completa,"SELECTEDVALUE('viajes'[ubicacion_viajes]) & "", "" &
+SELECTEDVALUE('geografia'[estado_region]) & "", "" &
+SELECTEDVALUE('geografia'[pais])"

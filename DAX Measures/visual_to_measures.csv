@@ -1,0 +1,66 @@
+﻿name_visual,dax_name
+Balance Financiero Mensual e Inversiones,primer_dia_mes
+Balance Financiero Mensual e Inversiones,Resultado Financiero a la Fecha
+Balance Financiero Mensual e Inversiones,Saldo Actual Inversiones
+Balance Metodo de Pago,Saldo Actual
+Comparativa por Presupuesto,Monto Gastado (Visual)
+Comparativa por Presupuesto,Monto Presupuestado (Visual)
+Descripcion por Presupuesto Especifico,Mostrar Descripcion
+Detalle de Transacciones,
+Detalle de Transacciones,Mostrar Transaccion
+Detalle de Transacciones,Seleccion Fecha Corte
+Detalle de Transacciones,Seleccion Fecha Inicio
+Detalles Viajes,Total Gastado Clave
+Diferencia Periodo Seleccionado,Diferencia Periodo Seleccionado
+Disponible,
+Duracion Viaje,Duracion del Viaje
+Estatus Linea de Credito,Credito Disponible
+Estatus Linea de Credito,Limite Credito
+Estatus Linea de Credito,Saldo Credito
+Estatus Pago del Credito,Simbolo_listo_para_pago
+Fecha de Corte,
+Fecha de Inicio,fecha_inicio
+Fecha Limite de Pago,
+Filtro por Ubicacion,Filtro Ubicacion Viajes
+Filtro por Ubicacion,id_viaje_descripcion
+Gasto Asociados a Viajes,Gasto Real Viajes
+Gasto Asociados a Viajes,Gasto Viajes (Treemap)
+Gasto Asociados a Viajes,ubicacion_viaje_ajustado
+Gasto en Credito por Periodo de Facturacion,Monto Asociado
+Gasto Total por Clave,Total Gastado Clave
+Horizonte de Sustenabilidad y Fecha Limite,Meses de Sostenibilidad
+Horizonte de Sustenabilidad y Fecha Limite,Meses y dias de Sostenibilidad
+Horizonte de Sustenabilidad y Fecha Limite,Saldo Credito
+Horizonte de Sustenabilidad y Fecha Limite,Total Disponible Inversiones
+Horizonte de Sustenabilidad y Fecha Limite,Total Presupuesto Especifico
+Horizonte de Sustenabilidad y Fecha Limite,Total Presupuesto Regular
+Ingresos,
+Lugar Visitado,Ubicacion_completa
+Mapa Gastos de Viaje,
+Monto Disponible vs. Limite Personal,Disponible antes del Limite
+Monto por Inversion,Diferencia Mensual
+Monto por Inversion,Monto Reciente por Acceso
+Montos Totales,Monto Gastado Dinamico
+Montos Totales,Monto Presupuestado
+No Disponible,
+Numero de Viajes,
+Porcentaje Utilizado del Presupuesto,% Presupuesto
+Razon de Uso,Filtro Razon de Uso
+Restante para Gastar,Restante para Gastar
+Resultado Financiero,Generado % Inversiones
+Resultado Financiero,Resultado Financiero a la Fecha
+Resumen Estado de Pago del Credito,Resumen Estado Pago
+Resumen Estado de Pago del Credito,Resumen Estado Pago Proximo Mes
+Resumen Estado de Pago del Credito,Resumen Pago Combinado
+Saldo Acumulado,Saldo Actual Inversiones
+Tendencia Acumulada de Inversiones,
+Tendencia Acumulada por Acceso,% Monto por inversiones
+Tendencia Acumulada por Inversion,Monto Inversiones Mensual
+Tipo de Inversion,
+Total Invertido,Total Inversiones
+Variacion Mensual de Inversiones,Diferencia Mensual
+Variacion Mensual de Inversiones,Monto Mensual
+Variacion Mensual de Inversiones,Monto Mes Anterior
+Viajes Agrupados,grupo_conteo
+Viajes Agrupados,grupo_viaje_descripcion
+Viajes Agrupados,id_viaje_descripcion
