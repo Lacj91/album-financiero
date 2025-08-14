@@ -2,7 +2,7 @@
 
 
 
-Presentación del projecto en video: https://youtu.be/9yG8\_yyavSs
+Presentación del proyecto en video: https://youtu.be/9yG8\_yyavSs
 
 
 
