@@ -1,4 +1,11 @@
 # album-financiero
+
+
+
+Presentación del projecto en video: https://youtu.be/9yG8\_yyavSs
+
+
+
 Resumen:
 El Album Financiero es una solución interactiva en Power BI diseñada para rastrear, analizar y optimizar la actividad financiera personal durante un período de 10 años. El proyecto transforma un archivo de Excel sin procesar en una base de datos escalable y con información valiosa.
 
@@ -22,8 +29,8 @@ Preguntas financieras clave respondidas:
 •	¿Cuánto dinero hay actualmente en las cuentas de ahorro? ¿Cómo han cambiado las inversiones a lo largo del tiempo? ¿Cuántos meses se puede mantener el estilo de vida actual con base en el presupuesto mensual promedio y los ahorros e inversiones disponibles?
 
 Archivos públicos:
-•	Archivo de Excel: album_financiero_publico.xlsx (datos anonimizados y escalados)
-•	Archivo de Power BI: album_financiero_publico.pbix (reporte final basado en el archivo de Excel)
+•	Archivo de Excel: album\_financiero\_publico.xlsx (datos anonimizados y escalados)
+•	Archivo de Power BI: album\_financiero\_publico.pbix (reporte final basado en el archivo de Excel)
 •	Documentación: Reporte completo y resúmenes en inglés y español.
 
 Herramientas utilizadas:
@@ -31,3 +38,4 @@ Herramientas utilizadas:
 •	Power BI (modelado de datos + visualizaciones)
 •	Mediciones DAX
 •	Power Query
+

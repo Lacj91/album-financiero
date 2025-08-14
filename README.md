@@ -1,5 +1,12 @@
 # album-financiero
- Overview:
+
+Presentation of the Project in Video:
+
+https://youtu.be/-VNsOJVgAmg
+
+
+
+Overview:
 The Album Financiero is a Power BI-based interactive solution designed to track, analyze, and optimize personal financial activity across a 10-year period. The project transforms a raw Excel file into a scalable and insightful dataset.
 
 Objective:
@@ -9,7 +16,7 @@ To build a data-driven tool that:
 •	Enables monthly and yearly tracking through a dynamic report.
 
 Main Components:
-•	Data Cleaning & Transformation: Consolidated and standardized 10+ years of personal financial data from multiple Excel tabs.
+•	Data Cleaning \& Transformation: Consolidated and standardized 10+ years of personal financial data from multiple Excel tabs.
 •	Power BI Visuals: Custom visualizations for budgets, spending trends, credit payments, investment tracking, and travel costs.
 •	Normalized Tables: Redesigned the data model with clean dimension tables
 •	Dynamic Filtering: Users can explore data by month, location, category, or financial goal.
@@ -22,8 +29,8 @@ Key Financial Questions Answered:
 •	How much money do I currently have in my savings accounts? How have my investments changed over time? How many months can I sustain my current lifestyle based on my average monthly budget and my available savings?
 
 Public Files:
-•	Excel File: album_financiero_publico.xlsx (anonymized and scaled data)
-•	Power BI File: album_financiero_publico.pbix (final report based in the Excel file.)
+•	Excel File: album\_financiero\_publico.xlsx (anonymized and scaled data)
+•	Power BI File: album\_financiero\_publico.pbix (final report based in the Excel file.)
 •	Documentation: Full report and summary in English and Spanish.
 
 Tools Used:
