@@ -1,4 +1,4 @@
-# album-financiero
+# album_financiero
 
 Presentation of the Project in Video:
 
