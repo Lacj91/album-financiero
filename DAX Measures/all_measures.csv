@@ -672,3 +672,84 @@ IF(
 ubicacion_completa,"SELECTEDVALUE('viajes'[ubicacion_viajes]) & "", "" &
 SELECTEDVALUE('geografia'[estado_region]) & "", "" &
 SELECTEDVALUE('geografia'[pais])"
+ubicacion_viaje_ajustado,"ubicacion_viaje_ajustado = 
+VAR UbicacionViaje =
+    LOOKUPVALUE(
+        viajes[ubicacion_viajes],
+        viajes[id_viaje], c_diaria[id_viaje]
+    )
+RETURN
+    IF(
+        ISBLANK(UbicacionViaje),
+        ""Sin Viaje"",
+        UbicacionViaje
+    )"
+tipo_inversion_detectado,"VAR Lista = 
+    FILTER(
+        'dim_tipo_inversion',
+        SEARCH('dim_tipo_inversion'[tipo_inversion], c_diaria[descripcion], 1, 0) > 0
+    )
+RETURN
+    MAXX(Lista, 'dim_tipo_inversion'[tipo_inversion])"
+Calendario,"ADDCOLUMNS(
+    SELECTCOLUMNS(
+        CALENDAR(DATE(2015,4,28), DATE(2026,12,31)),
+        ""Fecha"", [Date]
+    ),
+    ""Año"", YEAR([Fecha]),
+    ""Mes"", SWITCH(
+        MONTH([Fecha]),
+        1, ""Enero"",
+        2, ""Febrero"",
+        3, ""Marzo"",
+        4, ""Abril"",
+        5, ""Mayo"",
+        6, ""Junio"",
+        7, ""Julio"",
+        8, ""Agosto"",
+        9, ""Septiembre"",
+        10, ""Octubre"",
+        11, ""Noviembre"",
+        12, ""Diciembre""
+    ),
+    ""Numero del Mes"", MONTH([Fecha]),
+    ""Dia"", DAY([Fecha]),
+    ""Año Mes"", FORMAT([Fecha], ""YYYY-MM""),
+    ""Mes Año"", FORMAT([Fecha], ""MMM YYYY""),
+    ""PrimerDiaMes"", DATE(YEAR([Fecha]), MONTH([Fecha]), 1),
+    ""FinMes"", EOMONTH([Fecha], 0)
+)"
+fecha_inicio,"VAR CurrentFecha = creditos[fecha_corte] 
+VAR PrevFecha =
+    CALCULATE(
+        MAX(creditos[fecha_corte]), 
+        FILTER(
+            creditos, 
+            creditos[fecha_corte] < CurrentFecha 
+        )
+    )
+RETURN
+    IF(
+        ISBLANK(PrevFecha),
+        DATE(2024, 9, 10),       -- 👈 your hardcoded first fecha_inicio
+        PrevFecha + 1
+    )"
+simbolo_listo_para_pago,"simbolo_listo_para_pago = 
+    IF(creditos[listo_para_pago] = ""si"", ""✔️"", ""❌"") "
+dim_tipo_inversion,"dim_tipo_inversion = 
+DISTINCT(SELECTCOLUMNS(inversiones, ""tipo_inversion"", inversiones[tipo_inversion]))"
+primer_dia_mes,"primer_dia_mes = 
+    DATE(YEAR(inversiones[fecha_monto]), MONTH(inversiones[fecha_monto]), 1)"
+grupo_viaje_descripcion,"grupo_viaje_descripcion = 
+'viajes'[grupo_viaje] & "" - "" & 'viajes'[viaje_principal] & "", "" &
+LOOKUPVALUE(
+    'geografia'[pais],
+    'geografia'[ubicacion_viajes], 'viajes'[viaje_principal]
+)"
+id_viaje_descripcion,"id_viaje_descripcion = 
+'viajes'[id_viaje] & "" - "" & 'viajes'[descripcion]"
+grupo_conteo,"grupo_conteo = 
+CALCULATE(
+    COUNTROWS('viajes'),
+    ALLEXCEPT('viajes', 'viajes'[grupo_viaje])
+)"
